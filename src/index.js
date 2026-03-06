@@ -9,9 +9,9 @@ const {
   getNioKeyboard,
   getMainMenuKeyboard,
   getActionKeyboard
-} = require('./src/handlers');
-const { generateSummary } = require('./src/utils');
-const db = require('./src/db');
+} = require('./handlers');
+const { generateSummary } = require('./utils');
+const db = require('./db');
 
 const TOKEN        = process.env.BOT_TOKEN;
 /** Default USD → C$ exchange rate; override via EXCHANGE_RATE env var. */
