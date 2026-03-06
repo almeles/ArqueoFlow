@@ -1,0 +1,19 @@
+{
+  "name": "arqueoflow-bot",
+  "version": "1.0.0",
+  "description": "Lightweight Telegram bot for ArqueoFlow route accounting",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.67.0",
+    "sqlite3": "^5.1.7"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "license": "MIT"
+}
