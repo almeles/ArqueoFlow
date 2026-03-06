@@ -1,0 +1,15 @@
+{
+  "name": "arqueoflow",
+  "version": "1.0.0",
+  "description": "Telegram bot for driver cash reconciliation (arqueo)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.3.1",
+    "node-telegram-bot-api": "^0.67.0"
+  }
+}
