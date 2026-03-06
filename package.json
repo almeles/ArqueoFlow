@@ -1,0 +1,19 @@
+{
+  "name": "arqueoflow",
+  "version": "1.0.0",
+  "description": "Telegram bot for route cash count (arqueo de rutas)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.67.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
