@@ -1,0 +1,14 @@
+{
+  "name": "arqueoflow",
+  "version": "1.0.0",
+  "description": "ArqueoFlow – Telegram bot for cash-register reconciliation (arqueo de ruta)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "node-telegram-bot-api": "0.67.0"
+  }
+}
