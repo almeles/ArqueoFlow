@@ -13,7 +13,7 @@ const {
   getNioKeyboard,
   getMainMenuKeyboard,
   getActionKeyboard
-} = require('./src/handlers');
+} = require('./handlers');
 
 const {
   formatNumber,
@@ -21,7 +21,7 @@ const {
   getStatusEmoji,
   getStatusLabel,
   generateSummary
-} = require('./src/utils');
+} = require('./utils');
 
 let passed = 0;
 let failed = 0;
