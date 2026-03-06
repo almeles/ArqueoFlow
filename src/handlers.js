@@ -129,6 +129,44 @@ function getActionKeyboard() {
   return { inline_keyboard: [_actionRow()] };
 }
 
+/**
+ * Build the admin-panel main-menu InlineKeyboardMarkup.
+ *
+ * Buttons: 📊 Estadísticas | 📋 Pendientes | 📁 Todos | 🔙 Volver
+ *
+ * @returns {{ inline_keyboard: Array<Array<Object>> }}
+ */
+function getAdminMenuKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '📊 Estadísticas', callback_data: 'admin_stats'   }],
+      [{ text: '📋 Pendientes',   callback_data: 'admin_pending' }],
+      [{ text: '📁 Todos',        callback_data: 'admin_all'     }],
+      [{ text: '🔙 Volver',       callback_data: 'menu_main'     }]
+    ]
+  };
+}
+
+/**
+ * Build an InlineKeyboardMarkup for approving or rejecting a specific arqueo.
+ *
+ * Buttons: ✅ Aprobar | ❌ Rechazar | 🔙 Volver al menú
+ *
+ * @param {number} arqueoId
+ * @returns {{ inline_keyboard: Array<Array<Object>> }}
+ */
+function getAdminArqueoKeyboard(arqueoId) {
+  return {
+    inline_keyboard: [
+      [
+        { text: '✅ Aprobar',       callback_data: `admin_approve_${arqueoId}` },
+        { text: '❌ Rechazar',      callback_data: `admin_reject_${arqueoId}`  }
+      ],
+      [{ text: '🔙 Volver al menú', callback_data: 'menu_admin' }]
+    ]
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -140,5 +178,7 @@ module.exports = {
   getUsdKeyboard,
   getNioKeyboard,
   getMainMenuKeyboard,
-  getActionKeyboard
+  getActionKeyboard,
+  getAdminMenuKeyboard,
+  getAdminArqueoKeyboard
 };

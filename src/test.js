@@ -12,7 +12,9 @@ const {
   getUsdKeyboard,
   getNioKeyboard,
   getMainMenuKeyboard,
-  getActionKeyboard
+  getActionKeyboard,
+  getAdminMenuKeyboard,
+  getAdminArqueoKeyboard
 } = require('./handlers');
 
 const {
@@ -198,6 +200,91 @@ const actionButtons = actionKb.inline_keyboard.flat();
 assert(actionButtons.some(b => b.callback_data === 'action_save'   && b.text.includes('💾')), 'action kb: 💾 Save');
 assert(actionButtons.some(b => b.callback_data === 'action_cancel' && b.text.includes('❌')), 'action kb: ❌ Cancel');
 assert(actionButtons.some(b => b.callback_data === 'action_edit'   && b.text.includes('✏️')), 'action kb: ✏️ Edit');
+
+// ---------------------------------------------------------------------------
+// getAdminMenuKeyboard
+// ---------------------------------------------------------------------------
+console.log('\n── getAdminMenuKeyboard ──');
+const adminKb = getAdminMenuKeyboard();
+const adminButtons = adminKb.inline_keyboard.flat();
+
+assert(adminButtons.some(b => b.callback_data === 'admin_stats'   && b.text.includes('📊')), 'admin menu: 📊 Estadísticas');
+assert(adminButtons.some(b => b.callback_data === 'admin_pending' && b.text.includes('📋')), 'admin menu: 📋 Pendientes');
+assert(adminButtons.some(b => b.callback_data === 'admin_all'     && b.text.includes('📁')), 'admin menu: 📁 Todos');
+assert(adminButtons.some(b => b.callback_data === 'menu_main'     && b.text.includes('🔙')), 'admin menu: 🔙 Volver');
+
+// ---------------------------------------------------------------------------
+// getAdminArqueoKeyboard
+// ---------------------------------------------------------------------------
+console.log('\n── getAdminArqueoKeyboard ──');
+const arqueoKb = getAdminArqueoKeyboard(42);
+const arqueoButtons = arqueoKb.inline_keyboard.flat();
+
+assert(arqueoButtons.some(b => b.callback_data === 'admin_approve_42' && b.text.includes('✅')), 'arqueo kb: ✅ Aprobar (id=42)');
+assert(arqueoButtons.some(b => b.callback_data === 'admin_reject_42'  && b.text.includes('❌')), 'arqueo kb: ❌ Rechazar (id=42)');
+assert(arqueoButtons.some(b => b.callback_data === 'menu_admin'       && b.text.includes('🔙')), 'arqueo kb: 🔙 Volver al menú');
+
+// ---------------------------------------------------------------------------
+// db – admin helpers (in-memory test database)
+// ---------------------------------------------------------------------------
+console.log('\n── db admin helpers ──');
+{
+  // Use an in-memory database so tests never touch the real file
+  process.env.DB_PATH = ':memory:';
+  // Re-require db with a fresh module instance
+  const dbPath = require.resolve('./db');
+  delete require.cache[dbPath];
+  const testDb = require('./db');
+
+  // Seed two arqueos
+  const id1 = testDb.saveArqueo({
+    chatId: 1, route: 'T1', planilla: 1000, devolCount: 0, devolAmount: 0,
+    cashUsd: 0, cashNio: 1000
+  });
+  const id2 = testDb.saveArqueo({
+    chatId: 2, route: 'T2', planilla: 500, devolCount: 1, devolAmount: 50,
+    cashUsd: 0, cashNio: 400
+  });
+
+  // getArqueoById
+  const a1 = testDb.getArqueoById(id1);
+  assert(a1 && a1.route === 'T1',                           'getArqueoById returns correct row');
+  assert(testDb.getArqueoById(999999) === undefined,        'getArqueoById returns undefined for missing id');
+
+  // getAllArqueos – no filter
+  const all = testDb.getAllArqueos();
+  assert(all.length === 2,                                  'getAllArqueos returns all rows');
+
+  // getAllArqueos – status filter
+  const cuadrado = testDb.getAllArqueos({ status: 'cuadrado' });
+  assert(cuadrado.some(r => r.id === id1),                  'getAllArqueos status=cuadrado includes balanced arqueo');
+
+  const faltante = testDb.getAllArqueos({ status: 'faltante' });
+  assert(faltante.some(r => r.id === id2),                  'getAllArqueos status=faltante includes deficit arqueo');
+
+  // getUnreviewedArqueos – both arqueos have auto-computed statuses, not yet approved/rejected
+  const unreviewed = testDb.getUnreviewedArqueos();
+  assert(unreviewed.length === 2,                           'getUnreviewedArqueos returns both (neither approved/rejected)');
+
+  // updateArqueoStatus
+  const changed = testDb.updateArqueoStatus(id1, 'aprobado');
+  assert(changed === 1,                                     'updateArqueoStatus returns 1 on success');
+  assert(testDb.getArqueoById(id1).status === 'aprobado',   'status updated to aprobado');
+
+  const noChange = testDb.updateArqueoStatus(999999, 'aprobado');
+  assert(noChange === 0,                                    'updateArqueoStatus returns 0 for missing id');
+
+  // after approval, getUnreviewedArqueos should exclude it
+  const unreviewedAfter = testDb.getUnreviewedArqueos();
+  assert(unreviewedAfter.length === 1,                      'getUnreviewedArqueos excludes approved arqueo');
+  assert(!unreviewedAfter.some(r => r.id === id1),          'getUnreviewedArqueos does not include approved id');
+
+  // getStats
+  const stats = testDb.getStats();
+  assert(Array.isArray(stats),                              'getStats returns array');
+  assert(stats.some(r => r.status === 'aprobado' && r.count === 1), 'getStats has aprobado=1');
+  assert(stats.some(r => r.status === 'faltante' && r.count === 1), 'getStats has faltante=1');
+}
 
 // ---------------------------------------------------------------------------
 // Result

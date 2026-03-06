@@ -8,7 +8,9 @@ const {
   getUsdKeyboard,
   getNioKeyboard,
   getMainMenuKeyboard,
-  getActionKeyboard
+  getActionKeyboard,
+  getAdminMenuKeyboard,
+  getAdminArqueoKeyboard
 } = require('./handlers');
 const { generateSummary } = require('./utils');
 const db = require('./db');
@@ -19,6 +21,24 @@ const EXCHANGE_RATE = parseFloat(process.env.EXCHANGE_RATE || '36.50');
 if (!TOKEN) {
   console.error('BOT_TOKEN environment variable is required.');
   process.exit(1);
+}
+
+/**
+ * Chat IDs allowed to access the admin panel.
+ * Set the ADMIN_CHAT_IDS environment variable to a comma-separated list, e.g.:
+ *   ADMIN_CHAT_IDS=123456789,987654321
+ */
+const ADMIN_CHAT_IDS = new Set(
+  (process.env.ADMIN_CHAT_IDS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(Number)
+);
+
+/** @param {number} chatId @returns {boolean} */
+function isAdmin(chatId) {
+  return ADMIN_CHAT_IDS.has(chatId);
 }
 
 const bot = new TelegramBot(TOKEN, { polling: true });
@@ -91,9 +111,139 @@ bot.on('callback_query', async (query) => {
     await bot.sendMessage(chatId, text, { reply_markup: getMainMenuKeyboard() });
 
   } else if (data === 'menu_admin') {
-    await bot.sendMessage(chatId, '🛡️ Panel de administración (próximamente).', {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado. No tienes permisos de administrador.', {
+        reply_markup: getMainMenuKeyboard()
+      });
+    } else {
+      await bot.sendMessage(chatId, '🛡️ *Panel de Administración*', {
+        parse_mode: 'Markdown',
+        reply_markup: getAdminMenuKeyboard()
+      });
+    }
+
+  // ── Admin: back to main ──────────────────────────────────────────────────
+  } else if (data === 'menu_main') {
+    await bot.sendMessage(chatId, 'Bienvenido a *ArqueoFlow* 🧾', {
+      parse_mode: 'Markdown',
       reply_markup: getMainMenuKeyboard()
     });
+
+  // ── Admin: stats ─────────────────────────────────────────────────────────
+  } else if (data === 'admin_stats') {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+    } else {
+      const stats = db.getStats();
+      let text = '📊 *Estadísticas Generales*\n\n';
+      if (stats.length === 0) {
+        text += 'No hay arqueos registrados.';
+      } else {
+        stats.forEach(row => {
+          const emoji = row.status === 'cuadrado' ? '🟢'
+            : row.status === 'faltante'  ? '🔴'
+            : row.status === 'sobrante'  ? '🟡'
+            : row.status === 'aprobado'  ? '✅'
+            : row.status === 'rechazado' ? '❌'
+            : '⬜';
+          text += `${emoji} ${row.status.toUpperCase()}: ${row.count}\n`;
+        });
+      }
+      await bot.sendMessage(chatId, text, {
+        parse_mode: 'Markdown',
+        reply_markup: getAdminMenuKeyboard()
+      });
+    }
+
+  // ── Admin: list pending (unreviewed) ─────────────────────────────────────
+  } else if (data === 'admin_pending') {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+    } else {
+      const unreviewed = db.getUnreviewedArqueos(5);
+      if (unreviewed.length === 0) {
+        await bot.sendMessage(chatId, '📋 No hay arqueos sin revisar.', {
+          reply_markup: getAdminMenuKeyboard()
+        });
+      } else {
+        for (const a of unreviewed) {
+          const text = `🆔 #${a.id} | Ruta ${a.route} | Chat ${a.chat_id}\n`
+            + `💰 Total: C$${a.total_caja.toFixed(2)} | Diff: C$${a.diff.toFixed(2)}\n`
+            + `📅 ${a.created_at}`;
+          await bot.sendMessage(chatId, text, {
+            reply_markup: getAdminArqueoKeyboard(a.id)
+          });
+        }
+        await bot.sendMessage(chatId, '— Fin de pendientes —', {
+          reply_markup: getAdminMenuKeyboard()
+        });
+      }
+    }
+
+  // ── Admin: list all ───────────────────────────────────────────────────────
+  } else if (data === 'admin_all') {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+    } else {
+      const all = db.getAllArqueos({ limit: 10 });
+      if (all.length === 0) {
+        await bot.sendMessage(chatId, '📁 No hay arqueos registrados.', {
+          reply_markup: getAdminMenuKeyboard()
+        });
+      } else {
+        const statusEmoji = s => s === 'cuadrado' ? '🟢'
+          : s === 'faltante'  ? '🔴'
+          : s === 'sobrante'  ? '🟡'
+          : s === 'aprobado'  ? '✅'
+          : s === 'rechazado' ? '❌'
+          : '⬜';
+        const lines = all.map(a =>
+          `${statusEmoji(a.status)} #${a.id} Ruta ${a.route} | C$${a.total_caja.toFixed(2)} | ${a.status}`
+        );
+        await bot.sendMessage(chatId, `📁 *Últimos arqueos:*\n\n${lines.join('\n')}`, {
+          parse_mode: 'Markdown',
+          reply_markup: getAdminMenuKeyboard()
+        });
+      }
+    }
+
+  // ── Admin: approve ────────────────────────────────────────────────────────
+  } else if (data.startsWith('admin_approve_')) {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+    } else {
+      const id = parseInt(data.slice('admin_approve_'.length), 10);
+      const changed = db.updateArqueoStatus(id, 'aprobado');
+      if (changed) {
+        await bot.sendMessage(chatId, `✅ Arqueo #${id} *aprobado*.`, {
+          parse_mode: 'Markdown',
+          reply_markup: getAdminMenuKeyboard()
+        });
+      } else {
+        await bot.sendMessage(chatId, `⚠️ Arqueo #${id} no encontrado.`, {
+          reply_markup: getAdminMenuKeyboard()
+        });
+      }
+    }
+
+  // ── Admin: reject ─────────────────────────────────────────────────────────
+  } else if (data.startsWith('admin_reject_')) {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+    } else {
+      const id = parseInt(data.slice('admin_reject_'.length), 10);
+      const changed = db.updateArqueoStatus(id, 'rechazado');
+      if (changed) {
+        await bot.sendMessage(chatId, `❌ Arqueo #${id} *rechazado*.`, {
+          parse_mode: 'Markdown',
+          reply_markup: getAdminMenuKeyboard()
+        });
+      } else {
+        await bot.sendMessage(chatId, `⚠️ Arqueo #${id} no encontrado.`, {
+          reply_markup: getAdminMenuKeyboard()
+        });
+      }
+    }
 
   // ── USD denomination taps ────────────────────────────────────────────────
   } else if (data.startsWith('usd_')) {

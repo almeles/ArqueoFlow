@@ -59,4 +59,79 @@ function getHistory(chatId, limit = 10) {
     .all(chatId, limit);
 }
 
-module.exports = { saveArqueo, getHistory };
+// ---------------------------------------------------------------------------
+// Admin helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Retrieve arqueos across all chats (admin use).
+ *
+ * @param {Object}  [opts]
+ * @param {string|null} [opts.status]  Filter by status value, or null for all.
+ * @param {number}      [opts.limit=10]
+ * @returns {Array<Object>}
+ */
+function getAllArqueos({ status = null, limit = 10 } = {}) {
+  if (status) {
+    return db
+      .prepare('SELECT * FROM arqueos WHERE status = ? ORDER BY created_at DESC LIMIT ?')
+      .all(status, limit);
+  }
+  return db
+    .prepare('SELECT * FROM arqueos ORDER BY created_at DESC LIMIT ?')
+    .all(limit);
+}
+
+/**
+ * Retrieve a single arqueo by its id.
+ *
+ * @param {number} id
+ * @returns {Object|undefined}
+ */
+function getArqueoById(id) {
+  return db
+    .prepare('SELECT * FROM arqueos WHERE id = ?')
+    .get(id);
+}
+
+/**
+ * Update the status of an arqueo (e.g. 'aprobado' or 'rechazado').
+ *
+ * @param {number} id
+ * @param {string} status
+ * @returns {number}  Number of rows changed (0 if id not found).
+ */
+function updateArqueoStatus(id, status) {
+  return db
+    .prepare('UPDATE arqueos SET status = ? WHERE id = ?')
+    .run(status, id)
+    .changes;
+}
+
+/**
+ * Get a count of arqueos grouped by status.
+ *
+ * @returns {Array<{status: string, count: number}>}
+ */
+function getStats() {
+  return db
+    .prepare('SELECT status, COUNT(*) AS count FROM arqueos GROUP BY status ORDER BY count DESC')
+    .all();
+}
+
+/**
+ * Retrieve arqueos that have not yet been reviewed (approved or rejected).
+ * These are arqueos whose status is 'cuadrado', 'faltante', or 'sobrante'.
+ *
+ * @param {number} [limit=10]
+ * @returns {Array<Object>}
+ */
+function getUnreviewedArqueos(limit = 10) {
+  return db
+    .prepare(`SELECT * FROM arqueos
+              WHERE status NOT IN ('aprobado', 'rechazado')
+              ORDER BY created_at DESC LIMIT ?`)
+    .all(limit);
+}
+
+module.exports = { saveArqueo, getHistory, getAllArqueos, getArqueoById, updateArqueoStatus, getStats, getUnreviewedArqueos };
