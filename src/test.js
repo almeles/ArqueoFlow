@@ -14,7 +14,8 @@ const {
   getMainMenuKeyboard,
   getActionKeyboard,
   getAdminMenuKeyboard,
-  getAdminArqueoKeyboard
+  getAdminArqueoKeyboard,
+  getAdminTerminalKeyboard
 } = require('./handlers');
 
 const {
@@ -211,6 +212,7 @@ const adminButtons = adminKb.inline_keyboard.flat();
 assert(adminButtons.some(b => b.callback_data === 'admin_stats'   && b.text.includes('📊')), 'admin menu: 📊 Estadísticas');
 assert(adminButtons.some(b => b.callback_data === 'admin_pending' && b.text.includes('📋')), 'admin menu: 📋 Pendientes');
 assert(adminButtons.some(b => b.callback_data === 'admin_all'     && b.text.includes('📁')), 'admin menu: 📁 Todos');
+assert(adminButtons.some(b => b.callback_data === 'admin_terminal'&& b.text.includes('🖥️')), 'admin menu: 🖥️ Terminal');
 assert(adminButtons.some(b => b.callback_data === 'menu_main'     && b.text.includes('🔙')), 'admin menu: 🔙 Volver');
 
 // ---------------------------------------------------------------------------
@@ -223,6 +225,16 @@ const arqueoButtons = arqueoKb.inline_keyboard.flat();
 assert(arqueoButtons.some(b => b.callback_data === 'admin_approve_42' && b.text.includes('✅')), 'arqueo kb: ✅ Aprobar (id=42)');
 assert(arqueoButtons.some(b => b.callback_data === 'admin_reject_42'  && b.text.includes('❌')), 'arqueo kb: ❌ Rechazar (id=42)');
 assert(arqueoButtons.some(b => b.callback_data === 'menu_admin'       && b.text.includes('🔙')), 'arqueo kb: 🔙 Volver al menú');
+
+// ---------------------------------------------------------------------------
+// getAdminTerminalKeyboard
+// ---------------------------------------------------------------------------
+console.log('\n── getAdminTerminalKeyboard ──');
+const termKb = getAdminTerminalKeyboard();
+const termButtons = termKb.inline_keyboard.flat();
+
+assert(Array.isArray(termKb.inline_keyboard),                                             'terminal kb has inline_keyboard');
+assert(termButtons.some(b => b.callback_data === 'admin_terminal_exit' && b.text.includes('🚪')), 'terminal kb: 🚪 Salir del terminal');
 
 // ---------------------------------------------------------------------------
 // db – admin helpers (in-memory test database)

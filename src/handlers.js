@@ -132,17 +132,33 @@ function getActionKeyboard() {
 /**
  * Build the admin-panel main-menu InlineKeyboardMarkup.
  *
- * Buttons: 📊 Estadísticas | 📋 Pendientes | 📁 Todos | 🔙 Volver
+ * Buttons: 📊 Estadísticas | 📋 Pendientes | 📁 Todos | 🖥️ Terminal | 🔙 Volver
  *
  * @returns {{ inline_keyboard: Array<Array<Object>> }}
  */
 function getAdminMenuKeyboard() {
   return {
     inline_keyboard: [
-      [{ text: '📊 Estadísticas', callback_data: 'admin_stats'   }],
-      [{ text: '📋 Pendientes',   callback_data: 'admin_pending' }],
-      [{ text: '📁 Todos',        callback_data: 'admin_all'     }],
-      [{ text: '🔙 Volver',       callback_data: 'menu_main'     }]
+      [{ text: '📊 Estadísticas', callback_data: 'admin_stats'    }],
+      [{ text: '📋 Pendientes',   callback_data: 'admin_pending'  }],
+      [{ text: '📁 Todos',        callback_data: 'admin_all'      }],
+      [{ text: '🖥️ Terminal',     callback_data: 'admin_terminal' }],
+      [{ text: '🔙 Volver',       callback_data: 'menu_main'      }]
+    ]
+  };
+}
+
+/**
+ * Build the inline keyboard shown while the admin terminal is active.
+ *
+ * Buttons: 🚪 Salir del terminal
+ *
+ * @returns {{ inline_keyboard: Array<Array<Object>> }}
+ */
+function getAdminTerminalKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '🚪 Salir del terminal', callback_data: 'admin_terminal_exit' }]
     ]
   };
 }
@@ -180,5 +196,6 @@ module.exports = {
   getMainMenuKeyboard,
   getActionKeyboard,
   getAdminMenuKeyboard,
-  getAdminArqueoKeyboard
+  getAdminArqueoKeyboard,
+  getAdminTerminalKeyboard
 };

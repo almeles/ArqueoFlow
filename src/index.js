@@ -1,5 +1,6 @@
 'use strict';
 
+const { exec } = require('child_process');
 const TelegramBot = require('node-telegram-bot-api');
 const {
   USD_BILLS,
@@ -10,7 +11,8 @@ const {
   getMainMenuKeyboard,
   getActionKeyboard,
   getAdminMenuKeyboard,
-  getAdminArqueoKeyboard
+  getAdminArqueoKeyboard,
+  getAdminTerminalKeyboard
 } = require('./handlers');
 const { generateSummary } = require('./utils');
 const db = require('./db');
@@ -41,7 +43,30 @@ function isAdmin(chatId) {
   return ADMIN_CHAT_IDS.has(chatId);
 }
 
+/**
+ * Execute a shell command on the server and return combined stdout + stderr.
+ * Commands are subject to a 10-second timeout and a 512 KB output buffer.
+ *
+ * @param {string} cmd Shell command to execute.
+ * @returns {Promise<string>} Trimmed output text.
+ */
+function execCommand(cmd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { timeout: 10000, maxBuffer: 512 * 1024 }, (error, stdout, stderr) => {
+      const output = (stdout + stderr).trim();
+      if (error) {
+        reject(Object.assign(new Error(output || error.message), { code: error.code }));
+      } else {
+        resolve(output);
+      }
+    });
+  });
+}
+
 const bot = new TelegramBot(TOKEN, { polling: true });
+
+/** Maximum characters per Telegram message. */
+const TELEGRAM_MAX_MESSAGE_LENGTH = 4000;
 
 // ---------------------------------------------------------------------------
 // Session store (in-memory)
@@ -207,6 +232,31 @@ bot.on('callback_query', async (query) => {
       }
     }
 
+  // ── Admin: open terminal ──────────────────────────────────────────────────
+  } else if (data === 'admin_terminal') {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+    } else {
+      session.step = 'terminal';
+      await bot.sendMessage(
+        chatId,
+        '🖥️ *Terminal activo* ⚠️\n\n'
+        + '⚠️ *Advertencia de seguridad:* los comandos se ejecutan directamente en el servidor con los permisos del proceso del bot\\. '
+        + 'Úsalo únicamente para tareas administrativas de confianza\\.\n\n'
+        + 'Envía cualquier comando para ejecutarlo\\. Escribe `exit` o pulsa el botón para salir\\.',
+        { parse_mode: 'MarkdownV2', reply_markup: getAdminTerminalKeyboard() }
+      );
+    }
+
+  // ── Admin: exit terminal ──────────────────────────────────────────────────
+  } else if (data === 'admin_terminal_exit') {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+    } else {
+      session.step = 'menu';
+      await bot.sendMessage(chatId, '🖥️ Terminal cerrado.', { reply_markup: getAdminMenuKeyboard() });
+    }
+
   // ── Admin: approve ────────────────────────────────────────────────────────
   } else if (data.startsWith('admin_approve_')) {
     if (!isAdmin(chatId)) {
@@ -366,6 +416,27 @@ bot.on('message', async (msg) => {
     await bot.sendMessage(chatId, '🇺🇸 Conteo USD. Toque cada billete para incrementar:', {
       reply_markup: getUsdKeyboard({})
     });
+
+  } else if (session.step === 'terminal') {
+    if (!isAdmin(chatId)) {
+      session.step = 'menu';
+      await bot.sendMessage(chatId, '🚫 Acceso denegado.', { reply_markup: getMainMenuKeyboard() });
+      return;
+    }
+    if (text.toLowerCase() === 'exit') {
+      session.step = 'menu';
+      await bot.sendMessage(chatId, '🖥️ Terminal cerrado.', { reply_markup: getAdminMenuKeyboard() });
+      return;
+    }
+    let reply;
+    try {
+      const output = await execCommand(text);
+      reply = output || '(sin salida)';
+    } catch (err) {
+      reply = `⚠️ Error (código ${err.code || '?'}):\n${err.message || String(err)}`;
+    }
+    if (reply.length > TELEGRAM_MAX_MESSAGE_LENGTH) reply = reply.slice(0, TELEGRAM_MAX_MESSAGE_LENGTH) + '\n…(truncado)';
+    await bot.sendMessage(chatId, reply, { reply_markup: getAdminTerminalKeyboard() });
 
   } else {
     await bot.sendMessage(chatId, '📱 Use /start para iniciar.', {
