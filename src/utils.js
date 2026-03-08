@@ -90,6 +90,23 @@ function getStatusEmoji(diff) {
 }
 
 /**
+ * Return the coloured emoji for a named status string.
+ *
+ * @param {string} status  One of: 'cuadrado','faltante','sobrante','aprobado','rechazado'
+ * @returns {string}
+ */
+function getStatusEmojiByStatus(status) {
+  switch (status) {
+    case 'cuadrado':  return '🟢';
+    case 'faltante':  return '🔴';
+    case 'sobrante':  return '🟡';
+    case 'aprobado':  return '✅';
+    case 'rechazado': return '❌';
+    default:          return '⬜';
+  }
+}
+
+/**
  * Return the human-readable status label for a given difference.
  *
  * @param {number} diff
@@ -212,6 +229,7 @@ module.exports = {
   padLabel,
   padFlagLabel,
   getStatusEmoji,
+  getStatusEmojiByStatus,
   getStatusLabel,
   generateSummary,
   generateCsv,

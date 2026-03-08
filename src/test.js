@@ -26,6 +26,7 @@ const {
   formatNumber,
   formatAmount,
   getStatusEmoji,
+  getStatusEmojiByStatus,
   getStatusLabel,
   generateSummary,
   generateCsv
@@ -66,7 +67,7 @@ assert(formatAmount(10000).length === 12, 'formatAmount width = 12');
 assert(formatAmount(500).length   === 12, 'formatAmount(500) width = 12');
 
 // ---------------------------------------------------------------------------
-// getStatusEmoji / getStatusLabel
+// getStatusEmoji / getStatusLabel / getStatusEmojiByStatus
 // ---------------------------------------------------------------------------
 console.log('\n── getStatusEmoji / getStatusLabel ──');
 assert(getStatusEmoji(0)    === '🟢', 'diff=0  → 🟢');
@@ -76,6 +77,14 @@ assert(getStatusEmoji(100)  === '🟡', 'diff>0  → 🟡');
 assert(getStatusLabel(0)    === 'CUADRADO',              'diff=0  label');
 assert(getStatusLabel(-200).startsWith('FALTANTE'),      'diff<0  label starts FALTANTE');
 assert(getStatusLabel(200).startsWith('SOBRANTE'),       'diff>0  label starts SOBRANTE');
+
+console.log('\n── getStatusEmojiByStatus ──');
+assert(getStatusEmojiByStatus('cuadrado')  === '🟢', 'cuadrado  → 🟢');
+assert(getStatusEmojiByStatus('faltante')  === '🔴', 'faltante  → 🔴');
+assert(getStatusEmojiByStatus('sobrante')  === '🟡', 'sobrante  → 🟡');
+assert(getStatusEmojiByStatus('aprobado')  === '✅', 'aprobado  → ✅');
+assert(getStatusEmojiByStatus('rechazado') === '❌', 'rechazado → ❌');
+assert(getStatusEmojiByStatus('unknown')   === '⬜', 'unknown   → ⬜');
 
 // ---------------------------------------------------------------------------
 // generateSummary

@@ -17,7 +17,7 @@ const {
   getReportKeyboard,
   getPersistentMenu
 } = require('./handlers');
-const { generateSummary, generateCsv } = require('./utils');
+const { generateSummary, generateCsv, getStatusEmoji, getStatusEmojiByStatus } = require('./utils');
 const db = require('./db');
 
 const TOKEN = process.env.BOT_TOKEN;
@@ -57,12 +57,12 @@ function getExchangeRate() {
 
 /**
  * Notify every configured admin chat about an event.
- * @param {string} message  Markdown text.
+ * @param {string} message  Plain-text message (no Markdown).
  */
 async function notifyAdmins(message) {
   for (const adminId of ADMIN_CHAT_IDS) {
     try {
-      await bot.sendMessage(adminId, message, { parse_mode: 'Markdown' });
+      await bot.sendMessage(adminId, message);
     } catch (_) { /* swallow per-admin delivery errors */ }
   }
 }
@@ -148,16 +148,6 @@ bot.onText(/\/setrate (.+)/, (msg, match) => {
 // Callback-query handler
 // ---------------------------------------------------------------------------
 
-/** Helper: status → emoji */
-function statusEmoji(s) {
-  return s === 'cuadrado' ? '🟢'
-    : s === 'faltante'  ? '🔴'
-    : s === 'sobrante'  ? '🟡'
-    : s === 'aprobado'  ? '✅'
-    : s === 'rechazado' ? '❌'
-    : '⬜';
-}
-
 bot.on('callback_query', async (query) => {
   const chatId  = query.message.chat.id;
   const data    = query.data;
@@ -241,7 +231,7 @@ bot.on('callback_query', async (query) => {
     const history = db.getArqueosByFilter({ chatId, from, to, limit: 20 });
     const text = history.length
       ? history.map(a =>
-          `${statusEmoji(a.status)} #${a.id} Ruta ${a.route} | C$${a.total_caja.toFixed(2)} | ${a.status} | ${String(a.created_at).slice(0, 10)}`
+          `${getStatusEmojiByStatus(a.status)} #${a.id} Ruta ${a.route} | C$${a.total_caja.toFixed(2)} | ${a.status} | ${String(a.created_at).slice(0, 10)}`
         ).join('\n')
       : 'No hay arqueos en ese período.';
     await bot.sendMessage(chatId, text, { reply_markup: getReportKeyboard() });
@@ -287,7 +277,7 @@ bot.on('callback_query', async (query) => {
         text += 'No hay arqueos registrados.';
       } else {
         stats.forEach(row => {
-          text += `${statusEmoji(row.status)} ${row.status.toUpperCase()}: ${row.count}\n`;
+          text += `${getStatusEmojiByStatus(row.status)} ${row.status.toUpperCase()}: ${row.count}\n`;
         });
       }
       await bot.sendMessage(chatId, text, {
@@ -309,7 +299,7 @@ bot.on('callback_query', async (query) => {
       } else {
         let text = '📈 *Tendencias por Semana*\n\n';
         rows.forEach(r => {
-          text += `${r.week} ${statusEmoji(r.status)} ${r.status}: ${r.count} (C$${(r.total_amount || 0).toFixed(2)})\n`;
+          text += `${r.week} ${getStatusEmojiByStatus(r.status)} ${r.status}: ${r.count} (C$${(r.total_amount || 0).toFixed(2)})\n`;
         });
         await bot.sendMessage(chatId, text, {
           parse_mode: 'Markdown',
@@ -334,7 +324,7 @@ bot.on('callback_query', async (query) => {
             + `💰 Planilla: C$${a.planilla.toFixed(2)} | Devol: ${a.devol_count} (C$${a.devol_amount.toFixed(2)})\n`
             + `💵 USD: C$${a.cash_usd.toFixed(2)} | 🇳🇮 NIO: C$${a.cash_nio.toFixed(2)}\n`
             + `🧾 Total: C$${a.total_caja.toFixed(2)} | Diff: C$${a.diff.toFixed(2)}\n`
-            + `${statusEmoji(a.status)} ${a.status.toUpperCase()} | 📅 ${a.created_at}`;
+            + `${getStatusEmojiByStatus(a.status)} ${a.status.toUpperCase()} | 📅 ${a.created_at}`;
           await bot.sendMessage(chatId, text, {
             reply_markup: getAdminArqueoKeyboard(a.id)
           });
@@ -357,7 +347,7 @@ bot.on('callback_query', async (query) => {
         });
       } else {
         const lines = all.map(a =>
-          `${statusEmoji(a.status)} #${a.id} Ruta ${a.route} | C$${a.total_caja.toFixed(2)} | ${a.status}`
+          `${getStatusEmojiByStatus(a.status)} #${a.id} Ruta ${a.route} | C$${a.total_caja.toFixed(2)} | ${a.status}`
         );
         await bot.sendMessage(chatId, `📁 *Últimos arqueos:*\n\n${lines.join('\n')}`, {
           parse_mode: 'Markdown',
@@ -421,7 +411,7 @@ bot.on('callback_query', async (query) => {
       } else {
         let text = '⚠️ *Alertas de Discrepancias*\n\n';
         discrepancies.forEach(a => {
-          text += `${statusEmoji(a.status)} #${a.id} Ruta ${a.route} | Diff: C$${a.diff.toFixed(2)} | ${a.created_at}\n`;
+          text += `${getStatusEmojiByStatus(a.status)} #${a.id} Ruta ${a.route} | Diff: C$${a.diff.toFixed(2)} | ${a.created_at}\n`;
         });
         await bot.sendMessage(chatId, text, {
           parse_mode: 'Markdown',
@@ -648,10 +638,10 @@ bot.on('callback_query', async (query) => {
       await bot.sendMessage(chatId, `✅ Arqueo #${id} guardado.`, {
         reply_markup: getMainMenuKeyboard()
       });
-      // Notify admins of the new submission
+      // Notify admins of the new submission (plain text, no Markdown parse mode)
+      const total = (session.arqueo.cashUsd + session.arqueo.cashNio).toFixed(2);
       await notifyAdmins(
-        `📋 Nuevo arqueo *#${id}* guardado\\.\nRuta: ${session.arqueo.route} | Total: C$${(session.arqueo.cashUsd + session.arqueo.cashNio).toFixed(2)}`
-          .replace(/[_*[\]()~`>#+\-=|{}.!]/g, c => `\\${c}`)
+        `📋 Nuevo arqueo #${id} guardado.\nRuta: ${session.arqueo.route} | Total: C$${total}`
       );
     }
 
