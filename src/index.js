@@ -10,7 +10,8 @@ const {
   getMainMenuKeyboard,
   getActionKeyboard,
   getAdminMenuKeyboard,
-  getAdminArqueoKeyboard
+  getAdminArqueoKeyboard,
+  getPersistentMenu
 } = require('./handlers');
 const { generateSummary } = require('./utils');
 const db = require('./db');
@@ -29,7 +30,7 @@ if (!TOKEN) {
  *   ADMIN_CHAT_IDS=123456789,987654321
  */
 const ADMIN_CHAT_IDS = new Set(
-  (process.env.ADMIN_CHAT_IDS || '')
+  (process.env.ADMIN_CHAT_IDS || process.env.ADMIN_IDS || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
@@ -81,7 +82,11 @@ bot.onText(/\/start/, (msg) => {
   sessions.set(chatId, { step: 'menu', arqueo: {} });
   bot.sendMessage(chatId, 'Bienvenido a *ArqueoFlow* 🧾', {
     parse_mode: 'Markdown',
-    reply_markup: getMainMenuKeyboard()
+    reply_markup: {
+      keyboard: getPersistentMenu(),
+      resize_keyboard: true,
+      one_time_keyboard: false
+    }
   });
 });
 
@@ -248,19 +253,22 @@ bot.on('callback_query', async (query) => {
   // ── USD denomination taps ────────────────────────────────────────────────
   } else if (data.startsWith('usd_')) {
     const bill = parseFloat(data.slice(4));
-    session.arqueo.usdCounts = session.arqueo.usdCounts || {};
-    session.arqueo.usdCounts[bill] = (session.arqueo.usdCounts[bill] || 0) + 1;
-    await bot.editMessageReplyMarkup(getUsdKeyboard(session.arqueo.usdCounts), {
-      chat_id: chatId, message_id: msgId
+    session.step = 'awaiting_qty';
+    session.currentDenom = bill;
+    session.currentCurrency = 'usd';
+    await bot.sendMessage(chatId, `🔢 ¿Cuántos billetes de $${bill} tienes?`, {
+      reply_markup: { force_reply: true }
     });
 
   // ── NIO denomination taps ────────────────────────────────────────────────
   } else if (data.startsWith('nio_')) {
     const denom = parseFloat(data.slice(4));
-    session.arqueo.nioCounts = session.arqueo.nioCounts || {};
-    session.arqueo.nioCounts[denom] = (session.arqueo.nioCounts[denom] || 0) + 1;
-    await bot.editMessageReplyMarkup(getNioKeyboard(session.arqueo.nioCounts), {
-      chat_id: chatId, message_id: msgId
+    session.step = 'awaiting_qty';
+    session.currentDenom = denom;
+    session.currentCurrency = 'nio';
+    const label = NIO_BILLS.includes(denom) ? 'billetes' : 'monedas';
+    await bot.sendMessage(chatId, `🔢 ¿Cuántas ${label} de C$${denom} tienes?`, {
+      reply_markup: { force_reply: true }
     });
 
   // ── Action: Save ─────────────────────────────────────────────────────────
@@ -320,6 +328,33 @@ bot.on('message', async (msg) => {
   const session = getSession(chatId);
   const text    = msg.text.trim();
 
+  // ── Persistent menu button handlers ────────────────────────────────────
+  if (text === '🚀 Nuevo Arqueo') {
+    session.step  = 'route';
+    session.arqueo = {};
+    await bot.sendMessage(chatId, '📋 Ingrese el número de ruta:');
+    return;
+  } else if (text === '📄 Mis Reportes') {
+    const history = db.getHistory(chatId);
+    const histText = history.length
+      ? history.map(a => `📄 Ruta ${a.route} | C$${a.total_caja.toFixed(2)} | ${a.status}`).join('\n')
+      : 'No hay arqueos registrados.';
+    await bot.sendMessage(chatId, histText, { reply_markup: getMainMenuKeyboard() });
+    return;
+  } else if (text === '🛡️ Admin') {
+    if (!isAdmin(chatId)) {
+      await bot.sendMessage(chatId, '🚫 Acceso denegado. No tienes permisos de administrador.', {
+        reply_markup: getMainMenuKeyboard()
+      });
+    } else {
+      await bot.sendMessage(chatId, '🛡️ *Panel de Administración*', {
+        parse_mode: 'Markdown',
+        reply_markup: getAdminMenuKeyboard()
+      });
+    }
+    return;
+  }
+
   if (session.step === 'route') {
     session.arqueo.route = text;
     session.step = 'planilla';
@@ -366,6 +401,32 @@ bot.on('message', async (msg) => {
     await bot.sendMessage(chatId, '🇺🇸 Conteo USD. Toque cada billete para incrementar:', {
       reply_markup: getUsdKeyboard({})
     });
+
+  } else if (session.step === 'awaiting_qty') {
+    const qty = parseInt(text, 10);
+    if (isNaN(qty) || qty < 0) {
+      await bot.sendMessage(chatId, '⚠️ Por favor ingresa un número válido (0 o más).');
+      return;
+    }
+
+    const denom    = session.currentDenom;
+    const currency = session.currentCurrency;
+
+    if (currency === 'usd') {
+      session.arqueo.usdCounts = session.arqueo.usdCounts || {};
+      session.arqueo.usdCounts[denom] = qty;
+      session.step = 'usd';
+      await bot.sendMessage(chatId, `✅ Guardado: ${qty} x $${denom}`, {
+        reply_markup: getUsdKeyboard(session.arqueo.usdCounts)
+      });
+    } else {
+      session.arqueo.nioCounts = session.arqueo.nioCounts || {};
+      session.arqueo.nioCounts[denom] = qty;
+      session.step = 'nio';
+      await bot.sendMessage(chatId, `✅ Guardado: ${qty} x C$${denom}`, {
+        reply_markup: getNioKeyboard(session.arqueo.nioCounts)
+      });
+    }
 
   } else {
     await bot.sendMessage(chatId, '📱 Use /start para iniciar.', {

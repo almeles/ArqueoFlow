@@ -14,7 +14,8 @@ const {
   getMainMenuKeyboard,
   getActionKeyboard,
   getAdminMenuKeyboard,
-  getAdminArqueoKeyboard
+  getAdminArqueoKeyboard,
+  getPersistentMenu
 } = require('./handlers');
 
 const {
@@ -158,14 +159,14 @@ assert(
   'all NIO denominations present'
 );
 
-// Bills use 🇳🇮 💵, coins use 🇳🇮 🪙
+// Bills use 💵, coins use 🪙 (no country flag prefix)
 NIO_BILLS.forEach(d => {
   const btn = nioButtons.find(b => b.callback_data === `nio_${d}`);
-  assert(btn && btn.text.startsWith('🇳🇮 💵'), `NIO bill C$${d} prefixed with 🇳🇮 💵`);
+  assert(btn && btn.text.startsWith('💵'), `NIO bill C$${d} prefixed with 💵`);
 });
 NIO_COINS.forEach(d => {
   const btn = nioButtons.find(b => b.callback_data === `nio_${d}`);
-  assert(btn && btn.text.startsWith('🇳🇮 🪙'), `NIO coin C$${d} prefixed with 🇳🇮 🪙`);
+  assert(btn && btn.text.startsWith('🪙'), `NIO coin C$${d} prefixed with 🪙`);
 });
 
 // Counts reflected
@@ -223,6 +224,18 @@ const arqueoButtons = arqueoKb.inline_keyboard.flat();
 assert(arqueoButtons.some(b => b.callback_data === 'admin_approve_42' && b.text.includes('✅')), 'arqueo kb: ✅ Aprobar (id=42)');
 assert(arqueoButtons.some(b => b.callback_data === 'admin_reject_42'  && b.text.includes('❌')), 'arqueo kb: ❌ Rechazar (id=42)');
 assert(arqueoButtons.some(b => b.callback_data === 'menu_admin'       && b.text.includes('🔙')), 'arqueo kb: 🔙 Volver al menú');
+
+// ---------------------------------------------------------------------------
+// getPersistentMenu
+// ---------------------------------------------------------------------------
+console.log('\n── getPersistentMenu ──');
+const persistentMenu = getPersistentMenu();
+
+assert(Array.isArray(persistentMenu),                                 'getPersistentMenu returns array');
+assert(persistentMenu.length === 2,                                   'getPersistentMenu has 2 rows');
+assert(persistentMenu[0].includes('🚀 Nuevo Arqueo'),                 'row 0 contains 🚀 Nuevo Arqueo');
+assert(persistentMenu[1].includes('📄 Mis Reportes'),                 'row 1 contains 📄 Mis Reportes');
+assert(persistentMenu[1].includes('🛡️ Admin'),                       'row 1 contains 🛡️ Admin');
 
 // ---------------------------------------------------------------------------
 // db – admin helpers (in-memory test database)
