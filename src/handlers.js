@@ -85,10 +85,10 @@ function getNioKeyboard(counts = {}) {
 
   const buttons = allDenoms.map(denom => {
     const isBill  = denom >= 10;
-    const flag    = isBill ? '🇳🇮 💵' : '🇳🇮 🪙';
+    const icon    = isBill ? '💵' : '🪙';
     const label   = Number.isInteger(denom) ? `C$${denom}` : `C$${denom.toFixed(2)}`;
     return {
-      text: `${flag} ${label} (${counts[denom] || 0})`,
+      text: `${icon} ${label} (${counts[denom] || 0})`,
       callback_data: `nio_${denom}`
     };
   });
@@ -167,6 +167,21 @@ function getAdminArqueoKeyboard(arqueoId) {
   };
 }
 
+/**
+ * Return the keyboard rows for a persistent reply keyboard.
+ *
+ * Row 1: 🚀 Nuevo Arqueo
+ * Row 2: 📄 Mis Reportes | 🛡️ Admin
+ *
+ * @returns {Array<Array<string>>}
+ */
+function getPersistentMenu() {
+  return [
+    ['🚀 Nuevo Arqueo'],
+    ['📄 Mis Reportes', '🛡️ Admin']
+  ];
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -180,5 +195,6 @@ module.exports = {
   getMainMenuKeyboard,
   getActionKeyboard,
   getAdminMenuKeyboard,
-  getAdminArqueoKeyboard
+  getAdminArqueoKeyboard,
+  getPersistentMenu
 };
