@@ -15,6 +15,10 @@ const {
   getActionKeyboard,
   getAdminMenuKeyboard,
   getAdminArqueoKeyboard,
+  getAdminUserMenuKeyboard,
+  getAdminTemplateMenuKeyboard,
+  getRouteTemplatesKeyboard,
+  getReportKeyboard,
   getPersistentMenu
 } = require('./handlers');
 
@@ -23,7 +27,8 @@ const {
   formatAmount,
   getStatusEmoji,
   getStatusLabel,
-  generateSummary
+  generateSummary,
+  generateCsv
 } = require('./utils');
 
 let passed = 0;
@@ -209,10 +214,18 @@ console.log('\n── getAdminMenuKeyboard ──');
 const adminKb = getAdminMenuKeyboard();
 const adminButtons = adminKb.inline_keyboard.flat();
 
-assert(adminButtons.some(b => b.callback_data === 'admin_stats'   && b.text.includes('📊')), 'admin menu: 📊 Estadísticas');
-assert(adminButtons.some(b => b.callback_data === 'admin_pending' && b.text.includes('📋')), 'admin menu: 📋 Pendientes');
-assert(adminButtons.some(b => b.callback_data === 'admin_all'     && b.text.includes('📁')), 'admin menu: 📁 Todos');
-assert(adminButtons.some(b => b.callback_data === 'menu_main'     && b.text.includes('🔙')), 'admin menu: 🔙 Volver');
+assert(adminButtons.some(b => b.callback_data === 'admin_stats'        && b.text.includes('📊')), 'admin menu: 📊 Estadísticas');
+assert(adminButtons.some(b => b.callback_data === 'admin_trends'       && b.text.includes('📈')), 'admin menu: 📈 Tendencias');
+assert(adminButtons.some(b => b.callback_data === 'admin_pending'      && b.text.includes('📋')), 'admin menu: 📋 Pendientes');
+assert(adminButtons.some(b => b.callback_data === 'admin_all'          && b.text.includes('📁')), 'admin menu: 📁 Todos');
+assert(adminButtons.some(b => b.callback_data === 'admin_bulk_approve' && b.text.includes('✅')), 'admin menu: ✅ Aprobar Todo');
+assert(adminButtons.some(b => b.callback_data === 'admin_bulk_reject'  && b.text.includes('❌')), 'admin menu: ❌ Rechazar Todo');
+assert(adminButtons.some(b => b.callback_data === 'admin_alerts'       && b.text.includes('⚠️')), 'admin menu: ⚠️ Alertas');
+assert(adminButtons.some(b => b.callback_data === 'admin_users'        && b.text.includes('👥')), 'admin menu: 👥 Usuarios');
+assert(adminButtons.some(b => b.callback_data === 'admin_templates'    && b.text.includes('📄')), 'admin menu: 📄 Plantillas');
+assert(adminButtons.some(b => b.callback_data === 'admin_csv'          && b.text.includes('📊')), 'admin menu: 📊 CSV Export');
+assert(adminButtons.some(b => b.callback_data === 'admin_exrate'       && b.text.includes('💱')), 'admin menu: 💱 Tipo de Cambio');
+assert(adminButtons.some(b => b.callback_data === 'menu_main'          && b.text.includes('🔙')), 'admin menu: 🔙 Volver');
 
 // ---------------------------------------------------------------------------
 // getAdminArqueoKeyboard
@@ -224,6 +237,55 @@ const arqueoButtons = arqueoKb.inline_keyboard.flat();
 assert(arqueoButtons.some(b => b.callback_data === 'admin_approve_42' && b.text.includes('✅')), 'arqueo kb: ✅ Aprobar (id=42)');
 assert(arqueoButtons.some(b => b.callback_data === 'admin_reject_42'  && b.text.includes('❌')), 'arqueo kb: ❌ Rechazar (id=42)');
 assert(arqueoButtons.some(b => b.callback_data === 'menu_admin'       && b.text.includes('🔙')), 'arqueo kb: 🔙 Volver al menú');
+
+// ---------------------------------------------------------------------------
+// getAdminUserMenuKeyboard
+// ---------------------------------------------------------------------------
+console.log('\n── getAdminUserMenuKeyboard ──');
+const userMenuKb = getAdminUserMenuKeyboard();
+const userMenuButtons = userMenuKb.inline_keyboard.flat();
+
+assert(userMenuButtons.some(b => b.callback_data === 'admin_users_assign' && b.text.includes('👤')), 'user menu: 👤 Asignar Rutas');
+assert(userMenuButtons.some(b => b.callback_data === 'admin_users_list'   && b.text.includes('📋')), 'user menu: 📋 Ver Usuarios');
+assert(userMenuButtons.some(b => b.callback_data === 'menu_admin'         && b.text.includes('🔙')), 'user menu: 🔙 Volver');
+
+// ---------------------------------------------------------------------------
+// getAdminTemplateMenuKeyboard
+// ---------------------------------------------------------------------------
+console.log('\n── getAdminTemplateMenuKeyboard ──');
+const tplMenuKb = getAdminTemplateMenuKeyboard();
+const tplMenuButtons = tplMenuKb.inline_keyboard.flat();
+
+assert(tplMenuButtons.some(b => b.callback_data === 'admin_template_new'  && b.text.includes('➕')), 'template menu: ➕ Nueva');
+assert(tplMenuButtons.some(b => b.callback_data === 'admin_template_del'  && b.text.includes('🗑️')), 'template menu: 🗑️ Borrar');
+assert(tplMenuButtons.some(b => b.callback_data === 'admin_template_list' && b.text.includes('📋')), 'template menu: 📋 Ver');
+assert(tplMenuButtons.some(b => b.callback_data === 'menu_admin'          && b.text.includes('🔙')), 'template menu: 🔙 Volver');
+
+// ---------------------------------------------------------------------------
+// getRouteTemplatesKeyboard
+// ---------------------------------------------------------------------------
+console.log('\n── getRouteTemplatesKeyboard ──');
+const templates = [{ id: 1, name: 'Ruta10081', planilla: 10000 }, { id: 2, name: 'Ruta20000', planilla: 5000 }];
+const tplKb = getRouteTemplatesKeyboard(templates);
+const tplButtons = tplKb.inline_keyboard.flat();
+
+assert(tplButtons.some(b => b.callback_data === 'template_1'    && b.text.includes('Ruta10081')), 'template kb: template_1');
+assert(tplButtons.some(b => b.callback_data === 'template_2'    && b.text.includes('Ruta20000')), 'template kb: template_2');
+assert(tplButtons.some(b => b.callback_data === 'template_none' && b.text.includes('🚫')),        'template kb: template_none');
+
+// ---------------------------------------------------------------------------
+// getReportKeyboard
+// ---------------------------------------------------------------------------
+console.log('\n── getReportKeyboard ──');
+const reportKb = getReportKeyboard();
+const reportButtons = reportKb.inline_keyboard.flat();
+
+assert(reportButtons.some(b => b.callback_data === 'report_today' && b.text.includes('📅')),  'report kb: 📅 Hoy');
+assert(reportButtons.some(b => b.callback_data === 'report_week'  && b.text.includes('📅')),  'report kb: 📅 Esta Semana');
+assert(reportButtons.some(b => b.callback_data === 'report_month' && b.text.includes('📅')),  'report kb: 📅 Este Mes');
+assert(reportButtons.some(b => b.callback_data === 'report_all'   && b.text.includes('📅')),  'report kb: 📅 Todo');
+assert(reportButtons.some(b => b.callback_data === 'report_csv'   && b.text.includes('📤')),  'report kb: 📤 Exportar CSV');
+assert(reportButtons.some(b => b.callback_data === 'menu_main'    && b.text.includes('🔙')),  'report kb: 🔙 Volver');
 
 // ---------------------------------------------------------------------------
 // getPersistentMenu
@@ -238,7 +300,29 @@ assert(persistentMenu[1].includes('📄 Mis Reportes'),                 'row 1 c
 assert(persistentMenu[1].includes('🛡️ Admin'),                       'row 1 contains 🛡️ Admin');
 
 // ---------------------------------------------------------------------------
-// db – admin helpers (in-memory test database)
+// generateCsv
+// ---------------------------------------------------------------------------
+console.log('\n── generateCsv ──');
+const csvRows = [
+  { id: 1, chat_id: 100, route: 'T1', planilla: 1000, devol_count: 0, devol_amount: 0,
+    cash_usd: 0, cash_nio: 1000, total_caja: 1000, diff: 0, status: 'cuadrado', created_at: '2024-01-01' },
+  { id: 2, chat_id: 200, route: 'T2,comma', planilla: 500, devol_count: 1, devol_amount: 50,
+    cash_usd: 100, cash_nio: 350, total_caja: 450, diff: -50, status: 'faltante', created_at: '2024-01-02' }
+];
+
+const csvOutput = generateCsv(csvRows);
+const csvLines  = csvOutput.split('\n');
+
+assert(csvLines[0].startsWith('id,chat_id,route'),              'CSV has correct header');
+assert(csvLines.length === 3,                                   'CSV has header + 2 data rows');
+assert(csvLines[1].startsWith('1,100,'),                       'first data row starts with id=1');
+assert(csvLines[2].startsWith('2,200,'),                       'second data row starts with id=2');
+// Check that commas inside route names are quoted
+assert(csvLines[2].includes('"T2,comma"'),                      'CSV quotes route with embedded comma');
+assert(csvLines[2].includes('-50'),                             'CSV contains negative diff');
+
+// ---------------------------------------------------------------------------
+// db – extended helpers (in-memory test database)
 // ---------------------------------------------------------------------------
 console.log('\n── db admin helpers ──');
 {
@@ -297,6 +381,99 @@ console.log('\n── db admin helpers ──');
   assert(Array.isArray(stats),                              'getStats returns array');
   assert(stats.some(r => r.status === 'aprobado' && r.count === 1), 'getStats has aprobado=1');
   assert(stats.some(r => r.status === 'faltante' && r.count === 1), 'getStats has faltante=1');
+
+  // ── New helpers ─────────────────────────────────────────────────────────
+
+  // bulkUpdateArqueoStatus
+  const id3 = testDb.saveArqueo({ chatId: 3, route: 'T3', planilla: 200, devolCount: 0, devolAmount: 0, cashUsd: 0, cashNio: 100 });
+  const id4 = testDb.saveArqueo({ chatId: 3, route: 'T4', planilla: 200, devolCount: 0, devolAmount: 0, cashUsd: 0, cashNio: 300 });
+  const bulkChanged = testDb.bulkUpdateArqueoStatus([id3, id4], 'aprobado');
+  assert(bulkChanged === 2,                                 'bulkUpdateArqueoStatus returns 2 changed');
+  assert(testDb.getArqueoById(id3).status === 'aprobado',  'bulk: id3 is aprobado');
+  assert(testDb.getArqueoById(id4).status === 'aprobado',  'bulk: id4 is aprobado');
+  assert(testDb.bulkUpdateArqueoStatus([], 'aprobado') === 0, 'bulkUpdateArqueoStatus on empty ids = 0');
+
+  // getArqueosByFilter
+  const filtered = testDb.getArqueosByFilter({ chatId: 3 });
+  assert(filtered.length === 2,                             'getArqueosByFilter by chatId returns 2');
+  const filteredStatus = testDb.getArqueosByFilter({ status: 'faltante' });
+  assert(filteredStatus.some(r => r.id === id2),            'getArqueosByFilter by status=faltante includes id2');
+
+  // getDiscrepancies
+  const discrep = testDb.getDiscrepancies(0, 10);
+  assert(Array.isArray(discrep),                            'getDiscrepancies returns array');
+  // id2 is faltante (diff < 0) and not yet approved
+  assert(discrep.some(r => r.id === id2),                   'getDiscrepancies includes faltante arqueo');
+  // id1 is aprobado, should not appear
+  assert(!discrep.some(r => r.id === id1),                  'getDiscrepancies excludes approved arqueo');
+
+  // getWeeklyStats
+  const weekly = testDb.getWeeklyStats(4);
+  assert(Array.isArray(weekly),                             'getWeeklyStats returns array');
+
+  // User management
+  testDb.upsertUser(100, 'alice', ['T1', 'T2']);
+  const user100 = testDb.getUser(100);
+  assert(user100 !== undefined,                              'getUser returns inserted user');
+  assert(user100.username === 'alice',                       'getUser username = alice');
+  assert(Array.isArray(user100.assigned_routes),             'assigned_routes is array');
+  assert(user100.assigned_routes.length === 2,               'user has 2 assigned routes');
+  assert(user100.assigned_routes.includes('T1'),             'user has route T1');
+
+  // canUserAccessRoute
+  assert(testDb.canUserAccessRoute(100, 'T1') === true,      'alice can access T1');
+  assert(testDb.canUserAccessRoute(100, 'T99') === false,    'alice cannot access T99');
+  assert(testDb.canUserAccessRoute(999, 'ANY') === true,     'unknown user can access any route');
+
+  // upsertUser – update: set empty routes (unrestricted)
+  testDb.upsertUser(100, 'alice', []);
+  assert(testDb.canUserAccessRoute(100, 'T99') === true,     'alice with empty routes can access T99');
+
+  // setUserActive
+  testDb.upsertUser(200, 'bob', ['T1']);
+  testDb.setUserActive(200, false);
+  assert(testDb.canUserAccessRoute(200, 'T1') === false,     'inactive user cannot access any route');
+  testDb.setUserActive(200, true);
+  assert(testDb.canUserAccessRoute(200, 'T1') === true,      'reactivated user can access T1 again');
+
+  // getAllUsers
+  const allUsers = testDb.getAllUsers();
+  assert(Array.isArray(allUsers),                            'getAllUsers returns array');
+  assert(allUsers.some(u => u.chat_id === 100),              'getAllUsers includes user 100');
+
+  // logAction / getActionLogs
+  testDb.logAction(100, 'test_action', { foo: 'bar' });
+  testDb.logAction(100, 'another_action', null);
+  const logs = testDb.getActionLogs({ chatId: 100 });
+  assert(logs.length >= 2,                                   'getActionLogs returns logged actions');
+  assert(logs.some(l => l.action === 'test_action'),         'log contains test_action');
+  assert(logs.some(l => l.action === 'another_action'),      'log contains another_action');
+  const allLogs = testDb.getActionLogs();
+  assert(Array.isArray(allLogs),                             'getActionLogs (no filter) returns array');
+
+  // Route templates
+  const tId1 = testDb.saveRouteTemplate('Ruta-A', 10000);
+  const tId2 = testDb.saveRouteTemplate('Ruta-B', 5000);
+  const tpls = testDb.getRouteTemplates();
+  assert(tpls.length >= 2,                                   'getRouteTemplates returns saved templates');
+  assert(tpls.some(t => t.name === 'Ruta-A'),                'templates include Ruta-A');
+  assert(tpls.some(t => t.name === 'Ruta-B'),                'templates include Ruta-B');
+  // Templates are ordered by name
+  const names = tpls.map(t => t.name);
+  assert(names.indexOf('Ruta-A') < names.indexOf('Ruta-B'), 'templates ordered alphabetically');
+  // Delete
+  const delCount = testDb.deleteRouteTemplate(tId1);
+  assert(delCount === 1,                                     'deleteRouteTemplate returns 1');
+  assert(!testDb.getRouteTemplates().some(t => t.id === tId1), 'deleted template no longer returned');
+  assert(testDb.deleteRouteTemplate(999999) === 0,           'delete missing template returns 0');
+
+  // Settings
+  testDb.setSetting('exchange_rate', 37.25);
+  assert(testDb.getSetting('exchange_rate') === '37.25',     'getSetting returns stored exchange rate');
+  testDb.setSetting('exchange_rate', 38.00);
+  assert(testDb.getSetting('exchange_rate') === '38',        'setSetting upserts (overwrites)');
+  assert(testDb.getSetting('nonexistent_key') === null,      'getSetting returns null for missing key');
+  assert(testDb.getSetting('nonexistent_key', 'def') === 'def', 'getSetting returns defaultValue when missing');
 }
 
 // ---------------------------------------------------------------------------

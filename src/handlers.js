@@ -132,17 +132,89 @@ function getActionKeyboard() {
 /**
  * Build the admin-panel main-menu InlineKeyboardMarkup.
  *
- * Buttons: 📊 Estadísticas | 📋 Pendientes | 📁 Todos | 🔙 Volver
- *
  * @returns {{ inline_keyboard: Array<Array<Object>> }}
  */
 function getAdminMenuKeyboard() {
   return {
     inline_keyboard: [
-      [{ text: '📊 Estadísticas', callback_data: 'admin_stats'   }],
-      [{ text: '📋 Pendientes',   callback_data: 'admin_pending' }],
-      [{ text: '📁 Todos',        callback_data: 'admin_all'     }],
-      [{ text: '🔙 Volver',       callback_data: 'menu_main'     }]
+      [{ text: '📊 Estadísticas',  callback_data: 'admin_stats'        }],
+      [{ text: '📈 Tendencias',    callback_data: 'admin_trends'       }],
+      [{ text: '📋 Pendientes',    callback_data: 'admin_pending'      }],
+      [{ text: '📁 Todos',         callback_data: 'admin_all'          }],
+      [
+        { text: '✅ Aprobar Todo', callback_data: 'admin_bulk_approve' },
+        { text: '❌ Rechazar Todo',callback_data: 'admin_bulk_reject'  }
+      ],
+      [{ text: '⚠️ Alertas',       callback_data: 'admin_alerts'       }],
+      [{ text: '👥 Usuarios',      callback_data: 'admin_users'        }],
+      [{ text: '📄 Plantillas',    callback_data: 'admin_templates'    }],
+      [{ text: '📊 CSV Export',    callback_data: 'admin_csv'          }],
+      [{ text: '💱 Tipo de Cambio',callback_data: 'admin_exrate'       }],
+      [{ text: '🔙 Volver',        callback_data: 'menu_main'          }]
+    ]
+  };
+}
+
+/**
+ * Build the admin user-management sub-menu InlineKeyboardMarkup.
+ *
+ * @returns {{ inline_keyboard: Array<Array<Object>> }}
+ */
+function getAdminUserMenuKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '👤 Asignar Rutas', callback_data: 'admin_users_assign' }],
+      [{ text: '📋 Ver Usuarios',  callback_data: 'admin_users_list'   }],
+      [{ text: '🔙 Volver',        callback_data: 'menu_admin'         }]
+    ]
+  };
+}
+
+/**
+ * Build the template-management sub-menu InlineKeyboardMarkup.
+ *
+ * @returns {{ inline_keyboard: Array<Array<Object>> }}
+ */
+function getAdminTemplateMenuKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '➕ Nueva Plantilla',  callback_data: 'admin_template_new'  }],
+      [{ text: '🗑️ Borrar Plantilla', callback_data: 'admin_template_del'  }],
+      [{ text: '📋 Ver Plantillas',   callback_data: 'admin_template_list' }],
+      [{ text: '🔙 Volver',           callback_data: 'menu_admin'          }]
+    ]
+  };
+}
+
+/**
+ * Build an InlineKeyboardMarkup for selecting a route template.
+ *
+ * @param {Array<{id: number, name: string, planilla: number}>} templates
+ * @returns {{ inline_keyboard: Array<Array<Object>> }}
+ */
+function getRouteTemplatesKeyboard(templates) {
+  const rows = templates.map(t => ([{
+    text: `📄 ${t.name} (C$${t.planilla.toLocaleString()})`,
+    callback_data: `template_${t.id}`
+  }]));
+  rows.push([{ text: '🚫 Sin Plantilla', callback_data: 'template_none' }]);
+  return { inline_keyboard: rows };
+}
+
+/**
+ * Build the report-filter InlineKeyboardMarkup (date range + CSV export).
+ *
+ * @returns {{ inline_keyboard: Array<Array<Object>> }}
+ */
+function getReportKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '📅 Hoy',         callback_data: 'report_today' }],
+      [{ text: '📅 Esta Semana', callback_data: 'report_week'  }],
+      [{ text: '📅 Este Mes',    callback_data: 'report_month' }],
+      [{ text: '📅 Todo',        callback_data: 'report_all'   }],
+      [{ text: '📤 Exportar CSV',callback_data: 'report_csv'   }],
+      [{ text: '🔙 Volver',      callback_data: 'menu_main'    }]
     ]
   };
 }
@@ -196,5 +268,9 @@ module.exports = {
   getActionKeyboard,
   getAdminMenuKeyboard,
   getAdminArqueoKeyboard,
-  getPersistentMenu
+  getAdminUserMenuKeyboard,
+  getAdminTemplateMenuKeyboard,
+  getRouteTemplatesKeyboard,
+  getReportKeyboard,
+  getPersistentMenu,
 };

@@ -174,6 +174,35 @@ function generateSummary({ route, planilla, devolCount, devolAmount, cashUsd, ca
 }
 
 // ---------------------------------------------------------------------------
+// CSV export
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert an array of arqueo rows to a CSV string.
+ *
+ * @param {Array<Object>} arqueos
+ * @returns {string}  UTF-8 CSV text with header row.
+ */
+function generateCsv(arqueos) {
+  const header = 'id,chat_id,route,planilla,devol_count,devol_amount,cash_usd,cash_nio,total_caja,diff,status,created_at';
+  const rows = arqueos.map(a => [
+    a.id,
+    a.chat_id,
+    `"${String(a.route).replace(/"/g, '""')}"`,
+    a.planilla,
+    a.devol_count,
+    a.devol_amount,
+    a.cash_usd,
+    a.cash_nio,
+    a.total_caja,
+    a.diff,
+    `"${a.status}"`,
+    `"${a.created_at}"`
+  ].join(','));
+  return [header, ...rows].join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -184,5 +213,6 @@ module.exports = {
   padFlagLabel,
   getStatusEmoji,
   getStatusLabel,
-  generateSummary
+  generateSummary,
+  generateCsv,
 };
