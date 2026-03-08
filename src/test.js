@@ -129,10 +129,10 @@ assert(
   'all USD denominations present'
 );
 
-// All USD buttons must start with the US flag and bill emoji
+// All USD buttons must start with the bill emoji (no country flag)
 assert(
-  usdButtons.every(b => b.text.startsWith('🇺🇸 💵')),
-  'USD buttons prefixed with 🇺🇸 💵'
+  usdButtons.every(b => b.text.startsWith('💵')),
+  'USD buttons prefixed with 💵'
 );
 
 // Count shown in the label
