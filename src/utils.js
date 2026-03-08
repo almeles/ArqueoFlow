@@ -90,6 +90,23 @@ function getStatusEmoji(diff) {
 }
 
 /**
+ * Return the coloured emoji for a named status string.
+ *
+ * @param {string} status  One of: 'cuadrado','faltante','sobrante','aprobado','rechazado'
+ * @returns {string}
+ */
+function getStatusEmojiByStatus(status) {
+  switch (status) {
+    case 'cuadrado':  return '🟢';
+    case 'faltante':  return '🔴';
+    case 'sobrante':  return '🟡';
+    case 'aprobado':  return '✅';
+    case 'rechazado': return '❌';
+    default:          return '⬜';
+  }
+}
+
+/**
  * Return the human-readable status label for a given difference.
  *
  * @param {number} diff
@@ -174,6 +191,35 @@ function generateSummary({ route, planilla, devolCount, devolAmount, cashUsd, ca
 }
 
 // ---------------------------------------------------------------------------
+// CSV export
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert an array of arqueo rows to a CSV string.
+ *
+ * @param {Array<Object>} arqueos
+ * @returns {string}  UTF-8 CSV text with header row.
+ */
+function generateCsv(arqueos) {
+  const header = 'id,chat_id,route,planilla,devol_count,devol_amount,cash_usd,cash_nio,total_caja,diff,status,created_at';
+  const rows = arqueos.map(a => [
+    a.id,
+    a.chat_id,
+    `"${String(a.route).replace(/"/g, '""')}"`,
+    a.planilla,
+    a.devol_count,
+    a.devol_amount,
+    a.cash_usd,
+    a.cash_nio,
+    a.total_caja,
+    a.diff,
+    `"${a.status}"`,
+    `"${a.created_at}"`
+  ].join(','));
+  return [header, ...rows].join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -183,6 +229,8 @@ module.exports = {
   padLabel,
   padFlagLabel,
   getStatusEmoji,
+  getStatusEmojiByStatus,
   getStatusLabel,
-  generateSummary
+  generateSummary,
+  generateCsv,
 };
