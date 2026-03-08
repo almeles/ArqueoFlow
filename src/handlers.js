@@ -51,7 +51,7 @@ function _chunk(arr, size) {
 /**
  * Build an InlineKeyboardMarkup for USD denomination entry.
  *
- * Each button is labelled "🇺🇸 💵 $<denom> (<count>)" so the user can see the
+ * Each button is labelled "💵 $<denom> (<count>)" so the user can see the
  * running tally while tapping.  Three action buttons appear at the bottom.
  *
  * @param {Object} [counts={}]  Map of denomination (number) → count (number).
@@ -59,7 +59,7 @@ function _chunk(arr, size) {
  */
 function getUsdKeyboard(counts = {}) {
   const buttons = USD_BILLS.map(bill => ({
-    text: `🇺🇸 💵 $${bill} (${counts[bill] || 0})`,
+    text: `💵 $${bill} (${counts[bill] || 0})`,
     callback_data: `usd_${bill}`
   }));
 
@@ -74,8 +74,8 @@ function getUsdKeyboard(counts = {}) {
 /**
  * Build an InlineKeyboardMarkup for NIO denomination entry.
  *
- * Bills (>= 10) are labelled "🇳🇮 💵 C$<denom> (<count>)".
- * Coins (<  10) are labelled "🇳🇮 🪙 C$<denom> (<count>)".
+ * Bills (>= 10) are labelled "💵 C$<denom> (<count>)".
+ * Coins (<  10) are labelled "🪙 C$<denom> (<count>)".
  *
  * @param {Object} [counts={}]  Map of denomination (number) → count (number).
  * @returns {{ inline_keyboard: Array<Array<Object>> }}
@@ -85,10 +85,10 @@ function getNioKeyboard(counts = {}) {
 
   const buttons = allDenoms.map(denom => {
     const isBill  = denom >= 10;
-    const flag    = isBill ? '🇳🇮 💵' : '🇳🇮 🪙';
+    const icon    = isBill ? '💵' : '🪙';
     const label   = Number.isInteger(denom) ? `C$${denom}` : `C$${denom.toFixed(2)}`;
     return {
-      text: `${flag} ${label} (${counts[denom] || 0})`,
+      text: `${icon} ${label} (${counts[denom] || 0})`,
       callback_data: `nio_${denom}`
     };
   });

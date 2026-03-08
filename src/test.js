@@ -128,10 +128,10 @@ assert(
   'all USD denominations present'
 );
 
-// All USD buttons must start with the US flag and bill emoji
+// All USD buttons must start with the bill emoji
 assert(
-  usdButtons.every(b => b.text.startsWith('🇺🇸 💵')),
-  'USD buttons prefixed with 🇺🇸 💵'
+  usdButtons.every(b => b.text.startsWith('💵')),
+  'USD buttons prefixed with 💵'
 );
 
 // Count shown in the label
@@ -158,14 +158,14 @@ assert(
   'all NIO denominations present'
 );
 
-// Bills use 🇳🇮 💵, coins use 🇳🇮 🪙
+// Bills use 💵, coins use 🪙
 NIO_BILLS.forEach(d => {
   const btn = nioButtons.find(b => b.callback_data === `nio_${d}`);
-  assert(btn && btn.text.startsWith('🇳🇮 💵'), `NIO bill C$${d} prefixed with 🇳🇮 💵`);
+  assert(btn && btn.text.startsWith('💵'), `NIO bill C$${d} prefixed with 💵`);
 });
 NIO_COINS.forEach(d => {
   const btn = nioButtons.find(b => b.callback_data === `nio_${d}`);
-  assert(btn && btn.text.startsWith('🇳🇮 🪙'), `NIO coin C$${d} prefixed with 🇳🇮 🪙`);
+  assert(btn && btn.text.startsWith('🪙'), `NIO coin C$${d} prefixed with 🪙`);
 });
 
 // Counts reflected
